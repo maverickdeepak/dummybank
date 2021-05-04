@@ -6,36 +6,47 @@
 
 // Data
 const account1 = {
-    owner: 'Jonas Schmedtmann',
-    movements: [200, 450, -400, 3000, -650, -130, 70, 1300],
-    interestRate: 1.2, // %
-    pin: 1111,
+  owner: 'Jonas Schmedtmann',
+  movements: [200, 455.23, -306.5, 25000, -642.21, -133.9, 79.97, 1300],
+  interestRate: 1.2, // %
+  pin: 1111,
+
+  movementsDates: [
+    '2019-11-18T21:31:17.178Z',
+    '2019-12-23T07:42:02.383Z',
+    '2020-01-28T09:15:04.904Z',
+    '2020-04-01T10:17:24.185Z',
+    '2020-05-08T14:11:59.604Z',
+    '2020-05-27T17:01:17.194Z',
+    '2020-07-11T23:36:17.929Z',
+    '2020-07-12T10:51:36.790Z',
+  ],
+  currency: 'EUR',
+  locale: 'pt-PT', // de-DE
 };
 
 const account2 = {
-    owner: 'Deepak Chauhan',
-    movements: [5000, 3400, -150, -790, -3210, -1000, 8500, -30],
-    interestRate: 1.5,
-    pin: 2222,
+  owner: 'Jessica Davis',
+  movements: [5000, 3400, -150, -790, -3210, -1000, 8500, -30],
+  interestRate: 1.5,
+  pin: 2222,
+
+  movementsDates: [
+    '2019-11-01T13:15:33.035Z',
+    '2019-11-30T09:48:16.867Z',
+    '2019-12-25T06:04:23.907Z',
+    '2020-01-25T14:18:46.235Z',
+    '2020-02-05T16:33:06.386Z',
+    '2020-04-10T14:43:26.374Z',
+    '2020-06-25T18:49:59.371Z',
+    '2020-07-26T12:01:20.894Z',
+  ],
+  currency: 'USD',
+  locale: 'en-US',
 };
 
-const account3 = {
-    owner: 'Steven Thomas Williams',
-    movements: [200, -200, 340, -300, -20, 50, 400, -460],
-    interestRate: 0.7,
-    pin: 3333,
-};
+const accounts = [account1, account2];
 
-const account4 = {
-    owner: 'Sarah Smith',
-    movements: [430, 1000, 700, 50, 90],
-    interestRate: 1,
-    pin: 4444,
-};
-
-const accounts = [account1, account2, account3, account4];
-
-const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
 
 // Elements
 const labelWelcome = document.querySelector('.welcome');
@@ -65,15 +76,17 @@ const inputClosePin = document.querySelector('.form__input--pin');
 
 
 // function for show the movements data into data table
-const displayMovements = (movements) => {
+const displayMovements = (acc, sort = false) => {
     containerMovements.innerHTML = '';
 
-    movements.forEach(function(mov, i) {
+    const movs = sort ? acc.movements.slice().sort((a, b) => a - b) : acc.movements
+
+    movs.forEach(function(mov, i) {
         const type = mov > 0 ? 'deposit' : 'withdrawal';
         const html = `
         <div class="movements__row">
           <div class="movements__type movements__type--${type}">${i + 1} ${type}</div>
-          <div class="movements__value">${mov}€</div>
+          <div class="movements__value">${mov.toFixed(2)}€</div>
         </div>
 `;
         containerMovements.insertAdjacentHTML('afterbegin', html);
@@ -91,16 +104,16 @@ const calcPrintAmount = (acc) => {
 
 
 const calcDisplaySummary = function(acc) {
-    const incomes = acc.movements.filter(mov => mov > 0).reduce((acc, mov) => acc + mov, 0)
-    labelSumIn.textContent = `${incomes}€`
+    const incomes = acc.movements.filter(mov => mov > 0).reduce((acc, mov) => acc + mov, 0);
+    labelSumIn.textContent = `${incomes.toFixed(2)}€`
 
-    const out = acc.movements.filter(mov => mov < 0).reduce((acc, mov) => acc + mov, 0)
-    labelSumOut.textContent = `${Math.abs(out)}€`
+    const out = acc.movements.filter(mov => mov < 0).reduce((acc, mov) => acc + mov, 0);
+    labelSumOut.textContent = `${out.toFixed(2)}€`
 
     const interest = acc.movements.filter(mov => mov > 0).map(deposit => (deposit * acc.interestRate/100)).filter((int, i, arr) => {
         return int >= 1
-    }).reduce((acc, int) => acc + int, 0)
-    labelSumInterest.textContent = `${interest}€`
+    }).reduce((acc, int) => acc + int, 0);
+    labelSumInterest.textContent = `${interest.toFixed(2)}€`
 }
 
 
@@ -119,7 +132,7 @@ createUsernames(accounts)
 
 const updatUI = function(acc) {
     //Display movements
-    displayMovements(acc.movements);
+    displayMovements(acc);
     // Display balance
     calcPrintAmount(acc)
     // Display summary
@@ -130,6 +143,23 @@ const updatUI = function(acc) {
 // event listner
 
 let currentAccount;
+
+
+// Fake always logged In
+
+currentAccount = account1;
+updatUI(currentAccount);
+containerApp.style.opacity = 100;
+
+
+const now = new Date();
+const day = `${now.getDate()}`.padStart(2, 0);
+const month = `${now.getMonth()}`.padStart(2, 0);
+const year = now.getFullYear();
+const hour = now.getHours();
+const min = `${now.getMinutes()}`.padStart(2, 0);
+labelDate.textContent = `${day}/${month}/${year}, ${hour}:${min}`; 
+
 
 btnLogin.addEventListener('click', function(e) {
     e.preventDefault();
@@ -175,6 +205,25 @@ btnTransfer.addEventListener('click', function(e){
     }
 })
 
+
+btnLoan.addEventListener('click', function(e){
+    e.preventDefault()
+
+    const amount = Math.floor(inputLoanAmount.value);
+
+    if (amount > 0 && currentAccount.movements.some(mov => mov >= amount * 0.1)) {
+
+        // add movement
+        currentAccount.movements.push(amount);
+
+        // update UI
+
+        updatUI(currentAccount);
+
+        inputLoanAmount.value = '';
+    }
+})
+
 btnClose.addEventListener('click', function(e) {
     e.preventDefault();
 
@@ -187,142 +236,20 @@ btnClose.addEventListener('click', function(e) {
         containerApp.style.opacity = 0;
 
         inputCloseUsername.value = inputClosePin.value = '';
+    } else {
+        alert('Username or Password is mismatched! Please check again');
     }
+
 });
 
+// sort the data
 
-/////////////////////////////////////////////////
-/////////////////////////////////////////////////
-// LECTURES
+let sorted = false;
 
-// const currencies = new Map([
-//   ['USD', 'United States dollar'],
-//   ['EUR', 'Euro'],
-//   ['GBP', 'Pound sterling'],
-// ]);
+btnSort.addEventListener('click', function(e) {
+    e.preventDefault();
+    displayMovements(currentAccount.movements, !sorted);
 
-
-/////////////////////////////////////////////////
-
-// Slice Method
-
-// let arr = ['a', 'b', 'c', 'd', 'e']
-
-// console.log(arr.slice(2))
-// console.log(arr.slice(2, 4))
-// console.log(arr.slice(-2))
-
-// console.log([...arr])
-
-// // splice method
-
-// console.log(arr.splice(2))
-// console.log(arr)
-
-// const newArray = ['n', 'h', 't', 'o', 'p']
-// //console.log(newArray.sort())
-// //console.log(newArray)
-
-// const letters = arr.concat(newArray)
-// console.log(letters.sort())
-
-//const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
-
-// //for(const movement of movements) {
-//   for (const [i, movement] of movements.entries()){
-//   if(movement > 0) {
-//     console.log(`Movement ${i + 1} Your despoited ${movement}`)
-//   } else {
-//     console.log(`Movement ${i + 1} You withdraw ${Math.abs(movement)}`)
-//   }
-// }
-// console.log('---------------------')
-// movements.forEach(function (movement, index) {
-//   if(movement > 0) {
-//     console.log(`Movement ${index + 1} Your despoited ${movement}`)
-//   } else {
-//     console.log(`Movement ${index + 1} You withdraw ${Math.abs(movement)}`)
-//   }
-// })
-
-// const currencies = new Map([
-//   ['USD', 'United States dollar'],
-//   ['EUR', 'Euro'],
-//   ['GBP', 'Pound sterling'],
-// ]);
-
-// currencies.forEach(function(value, key, map) {
-//   console.log(`${key} : ${value}`)
-// })
-
-// const euruToUSD = 1.12
-
-// const allMovements = movements.map((movement, index) => {
-// return Math.floor(movement * euruToUSD)
-// })
-// console.log(movements)
-// console.log(allMovements)
-
-// const moveMovementsToUSD = []
-
-// for (const move of movements) {
-//   moveMovementsToUSD.push(move * euruToUSD)
-// }
-
-// console.log(moveMovementsToUSD)
-
-// movements.map((moving, i) => {
-//   if(moving > 0) {
-//     console.log(`Movement ${i + 1} : You deposited ${moving}`)
-//   } else {
-//     console.log(`Movement ${i + 1} : You withdrawal ${moving}`)
-//   }
-// })
-
-// const deposits = movements.filter(function(mov) {
-//   return mov > 0
-// })
-
-// console.log(movements)
-// console.log(deposits)
-
-// console.log(movements)
-
-// const balance = movements.reduce(function(accu, currentValue, index, array) {
-//     console.log(`Iteration : ${index} -> ${accu} `)
-//     return accu + currentValue
-// })
-
-// console.log(balance)
-
-// let balanceTwo = 0;
-// for (const moc of movements) {
-//     balanceTwo += moc
-// }
-
-// console.log(balanceTwo)
-
-// get the maximum value of an array
-const maximumValue = movements.reduce(function(accum, currentVal) {
-    if (accum > currentVal)
-        return accum
-    else return currentVal
-}, movements[0])
-
-console.log(maximumValue)
-
-console.log(movements)
-
-// PIPELINE
-const euruToUSD = 1.1
-const totalDepositsUSD = movements.filter( mov => mov > 0).map(mov => mov * euruToUSD).reduce((acc, mov) => acc + mov, 0)
-console.log(totalDepositsUSD)
-
-const firstWithdrawal = movements.filter((mov => mov < 0))
-console.log(firstWithdrawal)
-
-console.log(accounts)
-
-const account = accounts.find((acc => acc.owner === "Jessica Davis"))
-console.log(account)
+    sorted = !sorted;
+})
 
